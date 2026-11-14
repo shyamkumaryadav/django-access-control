@@ -1,46 +1,1 @@
-"""
-Django admin configuration for RBAC models.
-"""
-from django.contrib import admin
-from core.models import Org, UserOrgRole, Project
-
-
-@admin.register(Org)
-class OrgAdmin(admin.ModelAdmin):
-    list_display = ['name', 'slug', 'admin', 'created_at']
-    search_fields = ['name', 'slug']
-    readonly_fields = ['created_at', 'updated_at']
-    fieldsets = (
-        ('Organization', {
-            'fields': ('name', 'slug', 'admin')
-        }),
-        ('Timestamps', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
-
-
-@admin.register(UserOrgRole)
-class UserOrgRoleAdmin(admin.ModelAdmin):
-    list_display = ['user', 'org', 'role', 'created_at']
-    list_filter = ['role', 'org', 'created_at']
-    search_fields = ['user__username', 'org__name']
-    readonly_fields = ['created_at']
-
-
-@admin.register(Project)
-class ProjectAdmin(admin.ModelAdmin):
-    list_display = ['name', 'org', 'created_at']
-    list_filter = ['org', 'created_at']
-    search_fields = ['name', 'org__name']
-    readonly_fields = ['created_at', 'updated_at']
-    fieldsets = (
-        ('Project', {
-            'fields': ('name', 'org', 'description')
-        }),
-        ('Timestamps', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
+"""Django admin configuration for RBAC models."""from django.contrib import adminfrom core.models import Org, Project, UserOrgRole@admin.register(Org)class OrgAdmin(admin.ModelAdmin):    list_display = ["name", "slug", "admin", "created_at"]    search_fields = ["name", "slug"]    readonly_fields = ["created_at", "updated_at"]    fieldsets = (        ("Organization", {"fields": ("name", "slug", "admin")}),        (            "Timestamps",            {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},        ),    )@admin.register(UserOrgRole)class UserOrgRoleAdmin(admin.ModelAdmin):    list_display = ["user", "org", "role", "created_at"]    list_filter = ["role", "org", "created_at"]    search_fields = ["user__username", "org__name"]    readonly_fields = ["created_at"]@admin.register(Project)class ProjectAdmin(admin.ModelAdmin):    list_display = ["name", "org", "created_at"]    list_filter = ["org", "created_at"]    search_fields = ["name", "org__name"]    readonly_fields = ["created_at", "updated_at"]    fieldsets = (        ("Project", {"fields": ("name", "org", "description")}),        (            "Timestamps",            {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},        ),    )

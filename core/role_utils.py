@@ -38,8 +38,7 @@ def get_user_org_role(user, org):
         return None
 
     return (
-        UserOrgRole.objects
-        .filter(user=user, org=org)
+        UserOrgRole.objects.filter(user=user, org=org)
         .values_list("role", flat=True)
         .first()
     )

@@ -12,7 +12,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 
 from .models import Org, Project, UserOrgRole
-from .permissions import ROLE_ADMIN, ROLE_PERMISSIONS, ROLE_SUPERUSER
+from .permissions import ROLE_PERMISSIONS
 
 
 class MultiLookupHyperlinkedIdentityField(
@@ -140,8 +140,7 @@ class OrgSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
-    user_role = serializers.SerializerMethodField()
-
+    current_user_role = serializers.CharField(read_only=True)
     user_permissions = serializers.SerializerMethodField()
 
     url = serializers.HyperlinkedIdentityField(
@@ -152,6 +151,7 @@ class OrgSerializer(serializers.ModelSerializer):
     project_url = MultiLookupHyperlinkedIdentityField(
         view_name="org-projects-list", lookup_fields={"org_id": "pk"}
     )
+    current_user_role = serializers.CharField(read_only=True)
 
     class Meta:
 
@@ -165,7 +165,7 @@ class OrgSerializer(serializers.ModelSerializer):
             "slug",
             "admin",
             "admin_username",
-            "user_role",
+            "current_user_role",
             "user_permissions",
             "created_at",
         ]
@@ -174,44 +174,13 @@ class OrgSerializer(serializers.ModelSerializer):
             "id",
             "url",
             "admin_username",
-            "user_role",
+            "current_user_role",
             "user_permissions",
             "created_at",
         ]
 
-    def get_user_role(self, obj):
-
-        user = self.context["request"].user
-
-        if user.is_superuser:
-
-            return ROLE_SUPERUSER
-
-        if obj.admin_id == user.id:
-
-            return ROLE_ADMIN
-
-        return (
-            UserOrgRole.objects.filter(
-                user=user,
-                org=obj,
-            )
-            .values_list(
-                "role",
-                flat=True,
-            )
-            .first()
-        )
-
     def get_user_permissions(self, obj):
-
-        role = self.get_user_role(obj)
-
-        if not role:
-
-            return []
-
-        return ROLE_PERMISSIONS.get(role, [])
+        return ROLE_PERMISSIONS.get(obj.current_user_role, [])
 
 
 class ProjectSerializer(serializers.ModelSerializer):

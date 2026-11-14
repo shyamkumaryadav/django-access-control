@@ -12,7 +12,9 @@ router = DefaultRouter()
 
 router.register(r"orgs", OrgViewSet, basename="org")
 
-router.register(r"orgs/(?P<org_id>\d+)/projects", ProjectViewSet, basename="org-projects")
+router.register(
+    r"orgs/(?P<org_id>\d+)/projects", ProjectViewSet, basename="org-projects"
+)
 
 router.register("fake-login", FakeLoginView, basename="fake-login")
 

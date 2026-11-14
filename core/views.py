@@ -1,44 +1,57 @@
 from django.contrib.auth import login
 from django.contrib.auth.models import User
-from django.db.models import Q
+from django.db.models import Case, CharField, OuterRef, Q, Subquery, Value, When
 from rest_framework import mixins, viewsets
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from .models import Org, Project
-from .permissions import RolePermission
-from .serializers import FakeLoginSerializer, OrgSerializer, ProjectSerializer, UserListSerializer
+from .models import Org, Project, UserOrgRole
+from .permissions import ROLE_ADMIN, ROLE_SUPERUSER, RolePermission
+from .serializers import (
+    FakeLoginSerializer,
+    OrgSerializer,
+    ProjectSerializer,
+    UserListSerializer,
+)
 
 
 class OrgViewSet(viewsets.ModelViewSet):
-
     serializer_class = OrgSerializer
+    permission_classes = [RolePermission]
 
-    permission_classes = [
-        RolePermission,
-    ]
-
-    queryset = (
-        Org.objects.select_related("admin")
-        .prefetch_related(
-            "user_roles",
-        )
-        .all()
-    )
+    queryset = Org.objects.select_related("admin")
 
     def get_queryset(self):
-
         user = self.request.user
-
         queryset = super().get_queryset()
 
         if user.is_superuser:
+            return queryset.annotate(
+                current_user_role=Value(
+                    ROLE_SUPERUSER,
+                    output_field=CharField(),
+                )
+            )
 
-            return queryset
+        user_role = UserOrgRole.objects.filter(
+            org_id=OuterRef("pk"),
+            user=user,
+        ).values("role")[:1]
 
-        return queryset.filter(
-            Q(admin=user) | Q(user_roles__user=user),
-        ).distinct()
+        return (
+            queryset.filter(Q(admin=user) | Q(user_roles__user=user))
+            .distinct()
+            .annotate(
+                current_user_role=Case(
+                    When(
+                        admin=user,
+                        then=Value(ROLE_ADMIN),
+                    ),
+                    default=Subquery(user_role),
+                    output_field=CharField(),
+                )
+            )
+        )
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
