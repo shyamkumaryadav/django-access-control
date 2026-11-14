@@ -24,13 +24,6 @@ dev = [
     "mypy>=1.0",
 ]
 
-[project.scripts]
-rbac-code = "manage:main"
-
-[build-system]
-requires = ["uv_build>=0.12.5,<0.13.0"]
-build-backend = "uv_build"
-
 # Black - Code Formatter
 [tool.black]
 line-length = 100
@@ -102,6 +95,15 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
 ]
+
+# Flake8 Configuration
+[tool.flake8]
+max-line-length = 100
+ignore = [
+    "E501",   # Line too long (handled by Black)
+    "W503",   # Line break before binary operator
+]
+
 
 # MyPy - Type Checking
 [tool.mypy]

@@ -562,7 +562,7 @@ wheels = [
 [[package]]
 name = "rbac-code"
 version = "0.1.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "django" },
     { name = "djangorestframework" },
