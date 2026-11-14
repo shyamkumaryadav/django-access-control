@@ -1,0 +1,82 @@
+# === Python & Virtual Environments ===
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.egg
+*.egg-info/
+dist/
+build/
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.eggs/
+*.egg-info/
+venv/
+.venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# === IDE & Editors ===
+.idea/
+.sublime-project
+.sublime-workspace
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.pydevproject
+
+# === Django Generated Files ===
+# Database
+db.sqlite3
+db.sqlite3-journal
+*.db
+*.sqlite
+
+# Static files
+staticfiles/
+/static/
+/media/
+
+# Migrations (keep initial migration, ignore others)
+# migrations/0*.py  # Uncomment if you want to ignore all except initial
+
+# Django environment
+.env
+.env.local
+.env.*.local
+.env.prod
+
+# Django cache
+.cache/
+*.cache
+
+# === Testing & Coverage ===
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.hypothesis/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# === Project-specific ===
+*.log
+*.pot
+cmd.log
+.python-version
+*.sqlite3-journal
+node_modules/
+npm-debug.log
+
+# === OS Files ===
+.DS_Store
+Thumbs.db
+.gitkeep
+
