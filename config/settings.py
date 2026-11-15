@@ -103,32 +103,3 @@ INTERNAL_IPS = ["127.0.0.1", "localhost"]
 DEBUG_TOOLBAR_CONFIG = {
     "SHOW_TOOLBAR_CALLBACK": lambda r: DEBUG,
 }
-
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "filters": {
-        "request_filter": {
-            "()": "core.logging.RequestLogFilter",
-        },
-    },
-    "formatters": {
-        "simple": {
-            "format": "%(message)s",
-        },
-    },
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "filters": ["request_filter"],
-            "formatter": "simple",
-        },
-    },
-    "loggers": {
-        "django.server": {
-            "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
-        },
-    },
-}

@@ -107,14 +107,12 @@ class RolePermission(BasePermission):
         # Reuse annotated role from the object
         if hasattr(obj, "current_user_role"):
             role = obj.current_user_role
-
         # Reuse annotated role from a cached related Org
         elif "org" in obj._state.fields_cache and hasattr(
             obj.org,
             "current_user_role",
         ):
             role = obj.org.current_user_role
-
         # Fall back to existing request-cached SQL lookup
         else:
             role = self.get_cached_user_role_for_org_id(
@@ -134,13 +132,11 @@ class RolePermission(BasePermission):
             # WWW-Authenticate header. use custom Unauthorized to force
             # 401 for unauthenticated requests.
             raise Unauthorized()
-
         return request.user.is_superuser
 
     def get_permission_code(self, view):
         resource = self.get_resource_name(view)
         action = self.get_business_action(view)
-
         return (
             resource,
             action,
@@ -159,28 +155,22 @@ class RolePermission(BasePermission):
         """
         if hasattr(view, "permission_resource"):
             return view.permission_resource
-
         queryset = getattr(view, "queryset", None)
-
         if queryset is None and hasattr(view, "get_queryset"):
             try:
                 queryset = view.get_queryset()
             except Exception:
                 queryset = None
-
         if queryset is not None:
             return queryset.model._meta.model_name
-
         return None
 
     def get_business_action(self, view):
         action = getattr(view, "action", None)
-
         action_map = {
             **DEFAULT_ACTION_MAP,
             **getattr(view, "permission_action_map", {}),
         }
-
         return action_map.get(action)
 
     def get_org_id_from_view(self, view):
@@ -203,13 +193,10 @@ class RolePermission(BasePermission):
             obj.org_id
         """
         model_name = obj.__class__._meta.model_name
-
         if model_name == "org":
             return obj.id
-
         if hasattr(obj, "org_id"):
             return obj.org_id
-
         return None
 
     def get_cached_user_role_for_org_id(self, request, org_id):
@@ -224,17 +211,14 @@ class RolePermission(BasePermission):
         user = request.user
         cache_key = f"org_role:{user.id}:{org_id}"
         django_request = request._request
-
         if not hasattr(django_request, "_rbac_role_cache"):
             django_request._rbac_role_cache = {}
-
         if cache_key not in django_request._rbac_role_cache:
             user_role = self.get_user_role_for_org_id(
                 user=user,
                 org_id=org_id,
             )
             django_request._rbac_role_cache[cache_key] = user_role
-
         return django_request._rbac_role_cache[cache_key]
 
     def get_user_role_for_org_id(self, user, org_id):
@@ -247,7 +231,6 @@ class RolePermission(BasePermission):
         """
         if not org_id:
             return None
-
         org_role = (
             Org.objects.filter(id=org_id)
             .annotate(
@@ -263,22 +246,16 @@ class RolePermission(BasePermission):
             .values("admin_id", "matched_role")
             .first()
         )
-
         if not org_role:
             return None
-
         if org_role["admin_id"] == user.id:
             return ROLE_ADMIN
-
         return org_role["matched_role"]
 
     def role_has_permission(self, role, permission_code):
         if not role:
             return False
-
         permissions = ROLE_PERMISSIONS.get(role, [])
-
         if "*" in permissions:
             return True
-
         return permission_code in permissions

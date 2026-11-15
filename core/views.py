@@ -55,24 +55,26 @@ class OrgViewSet(viewsets.ModelViewSet):
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
-
-    queryset = Project.objects.select_related("org", "org__admin").all()
-
+    queryset = Project.objects.select_related(
+        "org",
+        "org__admin",
+    ).all()
     serializer_class = ProjectSerializer
-
     permission_classes = [RolePermission]
 
     def get_queryset(self):
-
-        org_id = self.kwargs["org_id"]
-
-        return super().get_queryset().filter(org_id=org_id)
+        return (
+            super()
+            .get_queryset()
+            .filter(
+                org_id=self.kwargs["org_id"],
+            )
+        )
 
     def perform_create(self, serializer):
-
-        org_id = self.kwargs["org_id"]
-
-        serializer.save(org_id=org_id)
+        serializer.save(
+            org_id=self.kwargs["org_id"],
+        )
 
 
 class FakeLoginView(
@@ -91,15 +93,12 @@ class FakeLoginView(
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         user = serializer.validated_data["user_id"]
-
         login(
             request,
             user,
             backend="django.contrib.auth.backends.ModelBackend",
         )
-
         return Response(
             {
                 "success": True,

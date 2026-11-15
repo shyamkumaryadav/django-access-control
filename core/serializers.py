@@ -27,9 +27,7 @@ class MultiLookupHyperlinkedIdentityField(
         lookup_fields: dict[str, str] | None = None,
         **kwargs: Any,
     ) -> None:
-
         self.lookup_fields = lookup_fields or {"pk": "pk"}
-
         super().__init__(*args, **kwargs)
 
     def get_url(
@@ -40,23 +38,14 @@ class MultiLookupHyperlinkedIdentityField(
         format: str | None,
     ) -> str | None:
         """Build URL using multiple lookup fields."""
-
         if obj.pk is None:
-
             return None
-
         url_kwargs: dict[str, Any] = {}
-
         for url_kwarg, model_field in self.lookup_fields.items():
-
             value = getattr(obj, model_field, None)
-
             if value is None:
-
                 return None
-
             url_kwargs[url_kwarg] = value
-
         return cast(
             "str | None",
             self.reverse(
@@ -66,23 +55,6 @@ class MultiLookupHyperlinkedIdentityField(
                 format=format,
             ),
         )
-
-
-class UserSerializer(serializers.ModelSerializer):
-
-    class Meta:
-
-        model = User
-
-        fields = [
-            "id",
-            "username",
-            "email",
-            "first_name",
-            "last_name",
-        ]
-
-        read_only_fields = ["id"]
 
 
 class UserListSerializer(serializers.ModelSerializer):
@@ -105,21 +77,17 @@ class FakeLoginSerializer(serializers.Serializer):
 
 
 class UserOrgRoleSerializer(serializers.ModelSerializer):
-
     user_username = serializers.CharField(
         source="user.username",
         read_only=True,
     )
-
     url = serializers.HyperlinkedIdentityField(
         view_name="userorgrole-detail",
         lookup_field="id",
     )
 
     class Meta:
-
         model = UserOrgRole
-
         fields = [
             "id",
             "url",
@@ -129,34 +97,34 @@ class UserOrgRoleSerializer(serializers.ModelSerializer):
             "role",
             "created_at",
         ]
-
-        read_only_fields = ["id", "url", "created_at"]
+        read_only_fields = [
+            "id",
+            "url",
+            "created_at",
+        ]
 
 
 class OrgSerializer(serializers.ModelSerializer):
-
     admin_username = serializers.CharField(
         source="admin.username",
         read_only=True,
     )
-
     current_user_role = serializers.CharField(read_only=True)
     user_permissions = serializers.SerializerMethodField()
-
     url = serializers.HyperlinkedIdentityField(
         view_name="org-detail",
         lookup_field="pk",
     )
-
     project_url = MultiLookupHyperlinkedIdentityField(
-        view_name="org-projects-list", lookup_fields={"org_id": "pk"}
+        view_name="org-projects-list",
+        lookup_fields={
+            "org_id": "pk",
+        },
     )
     current_user_role = serializers.CharField(read_only=True)
 
     class Meta:
-
         model = Org
-
         fields = [
             "id",
             "url",
@@ -169,7 +137,6 @@ class OrgSerializer(serializers.ModelSerializer):
             "user_permissions",
             "created_at",
         ]
-
         read_only_fields = [
             "id",
             "url",
@@ -184,9 +151,7 @@ class OrgSerializer(serializers.ModelSerializer):
 
 
 class ProjectSerializer(serializers.ModelSerializer):
-
     org_name = serializers.CharField(source="org.name", read_only=True)
-
     url = MultiLookupHyperlinkedIdentityField(
         view_name="org-projects-detail",
         lookup_fields={
@@ -196,9 +161,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-
         model = Project
-
         fields = [
             "id",
             "url",
@@ -209,5 +172,10 @@ class ProjectSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-
-        read_only_fields = ["id", "url", "created_at", "org", "updated_at"]
+        read_only_fields = [
+            "id",
+            "url",
+            "created_at",
+            "org",
+            "updated_at",
+        ]

@@ -46,15 +46,7 @@ class Org(models.Model):
 
 
 class UserOrgRole(models.Model):
-    """
-
-    Track PI and READ_ONLY users inside an organization.
-    ORG_ADMIN is not stored here.
-    ORG_ADMIN is stored in Org.admin and is immutable after Org creation.
-    """
-
     if TYPE_CHECKING:
-
         user_id: int
         org_id: int
 
