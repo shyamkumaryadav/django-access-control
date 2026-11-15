@@ -4,6 +4,8 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from .utils import ROLE_PI, ROLE_READ_ONLY, ROLE_SI
+
 
 class Org(models.Model):
     """Organization with immutable admin."""
@@ -57,8 +59,9 @@ class UserOrgRole(models.Model):
         org_id: int
 
     ROLE_CHOICES = [
-        ("PI", "Principal Investigator"),
-        ("READ_ONLY", "Read-Only User"),
+        (ROLE_PI, "Principal Investigator"),
+        (ROLE_READ_ONLY, "Read-Only User"),
+        (ROLE_SI, "System Integrator"),
     ]
     user = models.ForeignKey(
         User,

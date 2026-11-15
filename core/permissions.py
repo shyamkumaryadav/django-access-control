@@ -2,11 +2,7 @@ from django.db.models import Subquery
 from rest_framework.permissions import BasePermission
 
 from .models import Org, UserOrgRole
-
-ROLE_SUPERUSER = "SUPERUSER"
-ROLE_ADMIN = "ADMIN"
-ROLE_PI = "PI"
-ROLE_READ_ONLY = "READ_ONLY"
+from .utils import ROLE_ADMIN, ROLE_PI, ROLE_READ_ONLY, ROLE_SI, ROLE_SUPERUSER
 
 ROLE_PERMISSIONS = {
     ROLE_SUPERUSER: ["*"],
@@ -29,6 +25,11 @@ ROLE_PERMISSIONS = {
         "project.delete",
     ],
     ROLE_READ_ONLY: [
+        "org.view",
+        "project.view",
+        "project.list",
+    ],
+    ROLE_SI: [
         "org.view",
         "project.view",
         "project.list",
