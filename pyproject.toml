@@ -3,7 +3,7 @@ name = "backend"
 version = "0.1.0"
 description = "Production-ready RBAC system for Django-DRF"
 readme = "README.md"
-requires-python = "==3.13.15"
+requires-python = ">=3.11"
 authors = [
     { name = "Shyamkumar Yadav", email = "shyamkumaryadav2003@gmail.com" }
 ]
