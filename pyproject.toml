@@ -14,18 +14,20 @@ dependencies = [
     "python-decouple>=3.8",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
+    "black>=26.10.1",
+    "django-stubs>=6.1.2",
+    "flake8>=7.5.0",
+    "flake8-pyproject",
+    "isort>=9.0.2",
+    "mypy>=2.4.1",
     "pytest>=8.0",
     "pytest-django>=4.7",
     "pytest-cov>=5.0",
-    "black>=24.0",
-    "flake8>=7.0",
-    "ruff>=0.6",
-    "mypy>=1.0",
 ]
+
 [tool.black]
-line-length = 88
 extend-exclude = '''
 # A regex preceded with ^/ will apply only to files and directories
 # in the root of the project.
@@ -39,9 +41,13 @@ force-exclude = '''
   ^/.venv/
 )
 '''
+[tool.flake8]
+max-line-length = 88
+extend-exclude = [".venv", "venv"]
+extend-ignore = ["E203", "W503"]
+
 [tool.isort]
 profile = "black"
-line_length = 88
 known_first_party = ["apps", "config"]
 extend_skip = ["migrations", ".venv", "venv"]
 filter_files = true
@@ -54,9 +60,8 @@ exclude_gitignore = true
 [tool.django-stubs]
 django_settings_module = "config.settings.test"
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "config.settings.test"
+DJANGO_SETTINGS_MODULE = "config.settings"
 python_files = ["test_*.py", "*_tests.py"]
-addopts = "--cov=apps --cov-report=term-missing"
 
 [tool.pyright]
 include = ["."]
@@ -80,18 +85,3 @@ extraPaths = ["."]
 
 [[tool.pyright.executionEnvironments]]
 root = "."
-
-[dependency-groups]
-dev = [
-    "black>=26.10.1",
-    "django-stubs>=6.1.2",
-    "flake8>=7.5.0",
-    "isort>=9.0.2",
-    "mypy>=2.4.1",
-]
-
-[tool.ruff]
-line-length = 88
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "W"]

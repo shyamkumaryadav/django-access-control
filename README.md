@@ -7,7 +7,7 @@ A simple role-based access control project built with Django and Django REST Fra
 Requires uv. The Python version is defined in `pyproject.toml`. Run from the repository root:
 
 ```sh
-uv sync --extra dev
+uv sync
 ```
 
 ## Run
@@ -30,10 +30,29 @@ Runs migrations and replaces existing users, organizations, roles, and projects 
 ## Tests (under development)
 
 ```sh
-uv run --extra dev pytest --ds=config.settings --override-ini="addopts="
+uv run pytest
 ```
 
-The test suite is under development. This command overrides the outdated settings and coverage defaults.
+The test suite is under development. pytest reads its settings from `pyproject.toml`.
+
+## Format and lint
+
+Run these commands from the repository root. isort sorts imports, Black formats code, and Flake8 checks for style issues and common mistakes:
+
+```sh
+uv run isort .
+uv run black .
+uv run flake8 .
+```
+
+Run isort before Black. Flake8 reads its settings from `pyproject.toml` using the `flake8-pyproject` plugin.
+
+To check formatting and imports without changing files:
+
+```sh
+uv run isort --check-only .
+uv run black --check .
+```
 
 ## Thanks
 
