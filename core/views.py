@@ -19,7 +19,10 @@ class OrgViewSet(viewsets.ModelViewSet):
     serializer_class = OrgSerializer
     permission_classes = [RolePermission]
 
-    queryset = Org.objects.select_related("admin")
+    queryset = Org.objects.select_related("admin").only(
+        "admin__username",
+        *(field.attname for field in Org._meta.concrete_fields),
+    )
 
     def get_queryset(self):
         user = self.request.user
@@ -57,7 +60,6 @@ class OrgViewSet(viewsets.ModelViewSet):
 class ProjectViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.select_related(
         "org",
-        "org__admin",
     ).all()
     serializer_class = ProjectSerializer
     permission_classes = [RolePermission]

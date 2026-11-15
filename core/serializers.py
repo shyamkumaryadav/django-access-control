@@ -138,11 +138,6 @@ class OrgSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = [
-            "id",
-            "url",
-            "admin_username",
-            "current_user_role",
-            "user_permissions",
             "created_at",
         ]
 
