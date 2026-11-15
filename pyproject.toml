@@ -1,5 +1,5 @@
 [project]
-name = "rbac-code"
+name = "backend"
 version = "0.1.0"
 description = "Production-ready RBAC system for Django-DRF"
 readme = "README.md"
