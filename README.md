@@ -4,7 +4,7 @@ A simple role-based access control project built with Django and Django REST Fra
 
 ## Install
 
-Requires Python 3.13.15 and uv. Run from the repository root:
+Requires uv. The Python version is defined in `pyproject.toml`. Run from the repository root:
 
 ```sh
 uv sync --extra dev

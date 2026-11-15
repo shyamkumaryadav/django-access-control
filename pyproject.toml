@@ -26,7 +26,6 @@ dev = [
 ]
 [tool.black]
 line-length = 88
-target-version = ["py313"]
 extend-exclude = '''
 # A regex preceded with ^/ will apply only to files and directories
 # in the root of the project.
@@ -48,7 +47,6 @@ extend_skip = ["migrations", ".venv", "venv"]
 filter_files = true
 [tool.mypy]
 plugins = ["mypy_django_plugin.main"]
-python_version = "3.13"
 strict = true
 ignore_missing_imports = true
 exclude = ['(^|/)(migrations|\.venv|venv)(/|$)']
@@ -77,7 +75,6 @@ exclude = [
 ]
 venvPath = "."
 venv = ".venv"
-pythonVersion = "3.13"
 typeCheckingMode = "basic"
 extraPaths = ["."]
 
@@ -95,7 +92,6 @@ dev = [
 
 [tool.ruff]
 line-length = 88
-target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
