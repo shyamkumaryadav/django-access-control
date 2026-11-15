@@ -1,6 +1,7 @@
 from django.db.models import Subquery
 from rest_framework.permissions import BasePermission
 
+from .exceptions import Unauthorized
 from .models import Org, UserOrgRole
 from .utils import ROLE_ADMIN, ROLE_PI, ROLE_READ_ONLY, ROLE_SI, ROLE_SUPERUSER
 
@@ -25,8 +26,7 @@ ROLE_PERMISSIONS = {
         "project.delete",
     ],
     ROLE_READ_ONLY: [
-        "org.view",
-        "project.view",
+        "org.list",
         "project.list",
     ],
     ROLE_SI: [
@@ -50,21 +50,14 @@ class RolePermission(BasePermission):
     message = "You do not have permission to perform this action."
 
     def has_permission(self, request, view):
-        user = request.user
 
-        if not user or not user.is_authenticated:
-            return False
-
-        if user.is_superuser:
+        if self.check_user(request):
             return True
 
-        permission_code = self.get_permission_code(view)
+        resource, action, permission_code = self.get_permission_code(view)
 
         if not permission_code:
             return False
-
-        resource = self.get_resource_name(view)
-        action = self.get_business_action(view)
 
         # /orgs/
         # Let queryset decide visible orgs. If none, return [].
@@ -98,15 +91,10 @@ class RolePermission(BasePermission):
         return False
 
     def has_object_permission(self, request, view, obj):
-        user = request.user
-
-        if not user or not user.is_authenticated:
-            return False
-
-        if user.is_superuser:
+        if self.check_user(request):
             return True
 
-        permission_code = self.get_permission_code(view)
+        _, _, permission_code = self.get_permission_code(view)
 
         if not permission_code:
             return False
@@ -139,14 +127,25 @@ class RolePermission(BasePermission):
             permission_code=permission_code,
         )
 
+    def check_user(self, request):
+        if not request.user.is_authenticated:
+            # DRF converts NotAuthenticated (401) to 403 when using
+            # SessionAuthentication because it does not provide a
+            # WWW-Authenticate header. use custom Unauthorized to force
+            # 401 for unauthenticated requests.
+            raise Unauthorized()
+
+        return request.user.is_superuser
+
     def get_permission_code(self, view):
         resource = self.get_resource_name(view)
         action = self.get_business_action(view)
 
-        if not resource or not action:
-            return None
-
-        return f"{resource}.{action}"
+        return (
+            resource,
+            action,
+            f"{resource}.{action}" if resource and action else None,
+        )
 
     def get_resource_name(self, view):
         """
@@ -220,7 +219,7 @@ class RolePermission(BasePermission):
         Why:
         - DRF Request is a wrapper.
         - Browsable API may create/use repeated permission checks.
-        - request._request is the real Django request for the current HTTP request.
+        - request._request is the real Django request for the current HTTP.
         """
         user = request.user
         cache_key = f"org_role:{user.id}:{org_id}"
@@ -230,10 +229,11 @@ class RolePermission(BasePermission):
             django_request._rbac_role_cache = {}
 
         if cache_key not in django_request._rbac_role_cache:
-            django_request._rbac_role_cache[cache_key] = self.get_user_role_for_org_id(
+            user_role = self.get_user_role_for_org_id(
                 user=user,
                 org_id=org_id,
             )
+            django_request._rbac_role_cache[cache_key] = user_role
 
         return django_request._rbac_role_cache[cache_key]
 
@@ -245,12 +245,6 @@ class RolePermission(BasePermission):
         - Checks Org.admin_id.
         - Checks UserOrgRole.role using Subquery.
         """
-        if not user or not user.is_authenticated:
-            return None
-
-        if user.is_superuser:
-            return ROLE_SUPERUSER
-
         if not org_id:
             return None
 
