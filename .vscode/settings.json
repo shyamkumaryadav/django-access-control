@@ -8,15 +8,9 @@
   "python.testing.cwd": "${workspaceFolder}",
   "python.testing.pytestArgs": ["."],
   "black-formatter.importStrategy": "fromEnvironment",
-  "black-formatter.args": [
-    "--config",
-    "${workspaceFolder}/pyproject.toml"
-  ],
+  "black-formatter.args": ["--config", "${workspaceFolder}/pyproject.toml"],
   "isort.importStrategy": "fromEnvironment",
-  "isort.args": [
-    "--settings-path",
-    "${workspaceFolder}/pyproject.toml"
-  ],
+  "isort.args": ["--settings-path", "${workspaceFolder}/pyproject.toml"],
   "flake8.importStrategy": "fromEnvironment",
   "flake8.cwd": "${workspaceFolder}",
   "mypy-type-checker.importStrategy": "fromEnvironment",
@@ -43,5 +37,6 @@
     "**/coverage": true,
     "**/__pycache__": true
   },
-  "python.analysis.includeAliasesFromUserFiles": true
+  "python.analysis.includeAliasesFromUserFiles": true,
+  "python.analysis.autoImportCompletions": true
 }
