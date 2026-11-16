@@ -6,13 +6,14 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from .models import Org, Project, UserOrgRole
-from .permissions import ROLE_ADMIN, ROLE_SUPERUSER, RolePermission
+from .permissions import RolePermission
 from .serializers import (
     FakeLoginSerializer,
     OrgSerializer,
     ProjectSerializer,
     UserListSerializer,
 )
+from .utils import ROLE_ADMIN, ROLE_SUPERUSER
 
 
 class OrgViewSet(viewsets.ModelViewSet):
@@ -85,7 +86,7 @@ class FakeLoginView(
     viewsets.GenericViewSet,
 ):
     permission_classes = [AllowAny]
-    queryset = User.objects.all().order_by("username")
+    queryset = User.objects.all()
 
     def get_serializer_class(self):
         if self.action == "list":

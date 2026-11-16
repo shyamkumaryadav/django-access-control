@@ -20,7 +20,7 @@ router.register("fake-login", FakeLoginView, basename="fake-login")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/", include(router.urls)),
+    path("api/v1/", include(router.urls)),
     path("api-auth/", include("rest_framework.urls")),
 ]
 

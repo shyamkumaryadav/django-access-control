@@ -1,170 +1,112 @@
-"""
+"""Seed readable accounts and organizations for manual RBAC testing."""
 
-Management command to seed database with test data.
-
-Usage: python manage.py seed
-
-"""
+from pathlib import Path
 
 from django.contrib.auth.models import User
 from django.core.management import call_command
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
+from django.db import connection, transaction
+from django.urls import reverse
 
 from core.models import Org, Project, UserOrgRole
+from core.utils import ROLE_ADMIN, ROLE_PI, ROLE_READ_ONLY, ROLE_SI
+
+# Each tester exercises every org role, plus no membership.
+# slug, name, tester1 role, tester2 role, project count
+SCENARIOS = [
+    ("admin-one", "Admin One Demo", ROLE_ADMIN, ROLE_PI, 2),
+    ("admin-two", "Admin Two Demo", ROLE_PI, ROLE_ADMIN, 2),
+    ("viewer", "Viewer Demo", ROLE_READ_ONLY, ROLE_SI, 2),
+    ("integrator", "Integrator Demo", ROLE_SI, ROLE_READ_ONLY, 2),
+    ("private", "Private Demo", None, None, 2),
+    ("empty", "Empty Demo", ROLE_PI, ROLE_READ_ONLY, 0),
+]
 
 
 class Command(BaseCommand):
-
-    help = "Delete database, run migrations, and populate with test data"
+    help = "Delete the SQLite database file, run migrations, and seed RBAC demo data"
 
     def handle(self, *args, **options):
-
-        self.stdout.write(self.style.WARNING("[*] Deleting database..."))
-        # First run migrations to create tables
-        self.stdout.write(self.style.WARNING("[*] Running migrations..."))
+        database_name = str(connection.settings_dict["NAME"])
+        if (
+            connection.vendor != "sqlite"
+            or database_name == ":memory:"
+            or database_name.startswith("file:")
+            or not database_name
+        ):
+            raise CommandError("This command requires a file-based SQLite database.")
+        database_path = Path(database_name).resolve()
+        connection.close()
+        self.stdout.write(f"Deleting SQLite database: {database_path}")
+        try:
+            database_path.unlink(missing_ok=True)
+        except OSError as error:
+            raise CommandError(f"Could not delete {database_path}: {error}") from error
+        self.stdout.write("Running migrations...")
         call_command("migrate", verbosity=0)
-        self.stdout.write(self.style.SUCCESS("[OK] Migrations complete"))
-        # Now delete all data (respecting constraints)
-        self.stdout.write(self.style.WARNING("[*] Clearing existing data..."))
-        UserOrgRole.objects.all().delete()
-        Project.objects.all().delete()
-        Org.objects.all().delete()
-        User.objects.all().delete()
-        self.stdout.write(self.style.SUCCESS("[OK] Database cleared"))
-        # Create users
-        self.stdout.write(self.style.WARNING("[*] Creating users..."))
-        # Superusers
-        User.objects.create_superuser(
-            username="superuser1",
-            email="superuser1@test.com",
+        self.stdout.write("Creating demo data...")
+        with transaction.atomic():
+            for number in (1, 2):
+                self.create_user(f"superuser{number}", is_superuser=True, is_staff=True)
+                self.create_user(f"outsider{number}")
+
+            testers = [self.create_user(f"tester{number}") for number in (1, 2)]
+            summary = []
+            for slug, name, role1, role2, project_count in SCENARIOS:
+                roles = (role1, role2)
+                admin = next(
+                    (user for user, role in zip(testers, roles) if role == ROLE_ADMIN),
+                    None,
+                )
+                if admin is None:
+                    admin = self.create_user(f"admin_{slug}")
+                org = Org.objects.create(name=name, slug=slug, admin=admin)
+                for user, role in zip(testers, roles):
+                    if role and role != ROLE_ADMIN:
+                        UserOrgRole.objects.create(user=user, org=org, role=role)
+                for number in range(1, project_count + 1):
+                    # Repeated names across orgs exercise tenant isolation.
+                    Project.objects.create(
+                        org=org,
+                        name=f"Project {number}",
+                        description=(
+                            f"Demo project in {name}.\nUse for edit/delete checks."
+                            if number == 1
+                            else ""
+                        ),
+                    )
+                summary.append((org, roles))
+
+        self.stdout.write(self.style.SUCCESS("Seeding complete. Password: password123"))
+        self.stdout.write("\nMain accounts: tester1, tester2")
+        self.stdout.write(f"{'Organization':<22} {'tester1':<12} {'tester2':<12} Admin")
+        for org, roles in summary:
+            self.stdout.write(
+                f"{org.name:<22} {roles[0] or 'NO ACCESS':<12} "
+                f"{roles[1] or 'NO ACCESS':<12} {org.admin.username}"
+            )
+            self.stdout.write(
+                "  "
+                + reverse("org-detail", args=[org.pk])
+                + "  "
+                + reverse("org-projects-list", kwargs={"org_id": org.pk})
+            )
+        self.stdout.write(
+            "\nsuperuser1 / superuser2: full access to every organization."
+        )
+        self.stdout.write("outsider1 / outsider2: no organizations or project access.")
+        self.stdout.write("admin_*: supporting admins, access only to their own org.")
+        self.stdout.write("Empty Demo has no projects; other orgs have two each.")
+        self.stdout.write(
+            f"Totals: {User.objects.count()} users, {Org.objects.count()} orgs, "
+            f"{UserOrgRole.objects.count()} memberships, "
+            f"{Project.objects.count()} projects."
+        )
+
+    def create_user(self, username, **flags):
+        return User.objects.create_user(
+            username=username,
+            email=f"{username}@example.com",
             password="password123",
+            **flags,
         )
-        User.objects.create_superuser(
-            username="superuser2",
-            email="superuser2@test.com",
-            password="password123",
-        )
-        self.stdout.write("  [OK] Created 2 superusers")
-
-        # Regular users (org admins, PI, readonly)
-
-        org_admin1 = User.objects.create_user(
-            username="admin1@acme.com",
-            email="admin1@acme.com",
-            password="password123",
-        )
-        org_admin2 = User.objects.create_user(
-            username="admin2@globex.com",
-            email="admin2@globex.com",
-            password="password123",
-        )
-        self.stdout.write("  [OK] Created 2 org admins")
-
-        pi1_org1 = User.objects.create_user(
-            username="pi1_acme@test.com",
-            email="pi1_acme@test.com",
-            password="password123",
-        )
-        pi1_org2 = User.objects.create_user(
-            username="pi1_globex@test.com",
-            email="pi1_globex@test.com",
-            password="password123",
-        )
-        self.stdout.write("  [OK] Created 2 PI users")
-
-        readonly1 = User.objects.create_user(
-            username="readonly1@acme.com",
-            email="readonly1@acme.com",
-            password="password123",
-        )
-        readonly2 = User.objects.create_user(
-            username="readonly2@globex.com",
-            email="readonly2@globex.com",
-            password="password123",
-        )
-        self.stdout.write("  [OK] Created 2 readonly users")
-
-        # Create organizations
-        self.stdout.write(self.style.WARNING("[*] Creating organizations..."))
-        org1 = Org.objects.create(
-            name="ACME Corp",
-            slug="acme",
-            admin=org_admin1,
-        )
-        org2 = Org.objects.create(
-            name="Globex Corp",
-            slug="globex",
-            admin=org_admin2,
-        )
-        self.stdout.write("  [OK] Created 2 organizations")
-
-        # Create UserOrgRoles (PI and ReadOnly for each org)
-        self.stdout.write(self.style.WARNING("[*] Creating user org roles..."))
-
-        # Org 1 roles
-        UserOrgRole.objects.create(user=pi1_org1, org=org1, role="PI")
-        UserOrgRole.objects.create(user=readonly1, org=org1, role="READ_ONLY")
-
-        # Org 2 roles
-        UserOrgRole.objects.create(user=pi1_org2, org=org2, role="PI")
-        UserOrgRole.objects.create(user=readonly2, org=org2, role="READ_ONLY")
-        self.stdout.write("  [OK] Created 4 user org roles")
-
-        # Create projects
-        self.stdout.write(self.style.WARNING("[*] Creating projects..."))
-
-        # Org 1 projects
-        Project.objects.create(
-            name="Portal Dev",
-            org=org1,
-            description="Internal portal development",
-        )
-        Project.objects.create(
-            name="API Gateway",
-            org=org1,
-            description="RESTful API gateway",
-        )
-
-        # Org 2 projects
-        Project.objects.create(
-            name="Analytics Platform",
-            org=org2,
-            description="Real-time analytics platform",
-        )
-        Project.objects.create(
-            name="ML Pipeline",
-            org=org2,
-            description="Machine learning pipeline",
-        )
-        self.stdout.write("  [OK] Created 4 projects")
-
-        # Print summary
-        self.stdout.write("\n" + "=" * 70)
-        self.stdout.write(self.style.SUCCESS("[OK] DATABASE SEEDING COMPLETE"))
-        self.stdout.write("=" * 70 + "\n")
-        self.stdout.write(self.style.WARNING("[INFO] DATA SUMMARY"))
-        self.stdout.write("-" * 70)
-        self.stdout.write("Superusers:       2  [password123]")
-        self.stdout.write("  - superuser1")
-        self.stdout.write("  - superuser2")
-        self.stdout.write("\nOrganization Admins: 2")
-        self.stdout.write("  - admin1@acme.com -> ACME Corp")
-        self.stdout.write("  - admin2@globex.com -> Globex Corp")
-        self.stdout.write("\nPI Users:         2")
-        self.stdout.write("  - pi1_acme@test.com -> ACME Corp")
-        self.stdout.write("  - pi1_globex@test.com -> Globex Corp")
-        self.stdout.write("\nReadOnly Users:   2")
-        self.stdout.write("  - readonly1@acme.com -> ACME Corp")
-        self.stdout.write("  - readonly2@globex.com -> Globex Corp")
-        self.stdout.write("\nOrganizations:    2")
-        self.stdout.write("  - ACME Corp (slug: acme)")
-        self.stdout.write("  - Globex Corp (slug: globex)")
-        self.stdout.write("\nProjects:         4 (2 per org)")
-        self.stdout.write("  ACME:   Portal Dev, API Gateway")
-        self.stdout.write("  Globex: Analytics Platform, ML Pipeline")
-        self.stdout.write("\nUserOrgRoles:     4")
-        self.stdout.write("  - ACME: 1 PI + 1 ReadOnly")
-        self.stdout.write("  - Globex: 1 PI + 1 ReadOnly")
-        self.stdout.write("-" * 70)
-        self.stdout.write(self.style.WARNING("\n[INFO] ENDPOINTS"))
-        self.stdout.write("-" * 70)

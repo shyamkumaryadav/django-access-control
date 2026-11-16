@@ -1,0 +1,85 @@
+{% extends "rest_framework/base.html" %} {% load static %} {% block userlinks %}
+<li><a href='{% url "admin:index" %}'>Admin</a></li>
+<li class="dropdown" id="user-switcher" data-current-user="{{ user.pk|default:'' }}">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    {% if user.is_authenticated %}{{ user.get_username }}{% else %}Select user{% endif %}
+    <b class="caret"></b>
+  </a>
+  <ul class="dropdown-menu">
+    <li class="dropdown-header" id="user-switch-status" role="status">Loading users…</li>
+    {% if user.is_authenticated %}
+    <li class="divider"></li>
+    <li>
+      <form id="logoutForm" method="post" action="{% url 'rest_framework:logout' %}?next={{ request.get_full_path|urlencode }}">
+        {% csrf_token %}
+      </form>
+      <a href="#" id="user-switch-logout">Log out</a>
+    </li>
+    {% endif %}
+  </ul>
+</li>
+{% endblock userlinks %}
+
+{% block script %}
+{{ block.super }}
+<script>
+  (function () {
+    const switcher = $('#user-switcher');
+    const status = $('#user-switch-status');
+    const endpoint = '{% url "fake-login-list" %}';
+    let loaded = false;
+    let loading = false;
+    let switching = false;
+
+    switcher.on('show.bs.dropdown', async function () {
+      if (loaded || loading) return;
+      loading = true;
+      status.text('Loading users…').show();
+      switcher.find('.user-option').remove();
+      try {
+        let next = endpoint;
+        while (next) {
+          const data = await $.ajax({url: next, dataType: 'json'});
+          for (const user of (data.results || data)) {
+            const current = String(user.id) === switcher.attr('data-current-user');
+            const link = $('<a>', {href: '#', text: user.username + (current ? ' (current)' : '')});
+            $('<li>', {class: 'user-option' + (current ? ' active' : '')})
+              .append(link).insertBefore(status);
+            link.on('click', async function (event) {
+              event.preventDefault();
+              event.stopPropagation();
+              if (current || switching) return;
+              switching = true;
+              status.text('Switching user…').show();
+              try {
+                await $.ajax({
+                  url: endpoint,
+                  method: 'POST',
+                  dataType: 'json',
+                  data: {user_id: user.id}
+                });
+                window.location.assign(window.location.href);
+              } catch (error) {
+                status.text('Could not switch user. Please try again.').show();
+                switching = false;
+              }
+            });
+          }
+          next = data.next;
+        }
+        loaded = true;
+        status.hide();
+      } catch (error) {
+        status.text('Could not load users. Reopen to retry.');
+      } finally {
+        loading = false;
+      }
+    });
+
+    $('#user-switch-logout').on('click', function (event) {
+      event.preventDefault();
+      document.getElementById('logoutForm').submit();
+    });
+  })();
+</script>
+{% endblock script %}
